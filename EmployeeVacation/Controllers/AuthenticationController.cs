@@ -3,12 +3,17 @@ using EmployeeVacation.Models.InputModels;
 //using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-//using NETCore.MailKit.Core;
-using User.Management.Service.Models;
-
-//using System.Security.Cryptography.X509Certificates;
-////using User.Management.Service.Models; ////
+using Microsoft.IdentityModel.Tokens;
+using System.CodeDom.Compiler;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using User.Management.Service.Models; ////
 using User.Management.Service.Services; ////
+
+//using NETCore.MailKit.Core;
+//using System.Security.Cryptography.X509Certificates;
+
 
 namespace EmployeeVacation.Controllers
 {
@@ -18,20 +23,18 @@ namespace EmployeeVacation.Controllers
     {
         private readonly UserManager<Employee> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        //private readonly IConfiguration _configuration;
-        private readonly IEmailService _emailService; ////
-
-
-        //public AuthenticationController(UserManager<Employee> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
-        public AuthenticationController(UserManager<Employee> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration, IEmailService emailService)
+        private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService; 
+        public AuthenticationController(UserManager<Employee> userManager, RoleManager<IdentityRole> roleManager, IEmailService emailService, IConfiguration configuration)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            //_configuration = configuration;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
         [HttpPost]
+        [Route("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUser registerUser, string role)
         {
             //Check if this Employee Exist
@@ -82,6 +85,60 @@ namespace EmployeeVacation.Controllers
 
         }
 
+        //Login
+        [HttpPost]
+        [Route("login")]
+        public async Task<IActionResult> Login([FromBody] LoginUser loginUser)
+        {
+            //checking the employee ...
+            var employee = await _userManager.FindByNameAsync(loginUser.UserName);
+
+            //-----------------------------------------checking the password 
+            if (employee != null && await _userManager.CheckPasswordAsync(employee, loginUser.Password))
+            {
+                //claimlist creation
+                var authClaims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.Name, employee.UserName),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                };
+
+                //we add roles to the claimlist
+                var userRoles = await _userManager.GetRolesAsync(employee);
+                foreach(var role in userRoles)
+                {
+                    authClaims.Add(new Claim(ClaimTypes.Role, role));
+                }
+
+                //generate the token with the claims...
+                var jwtToken = GetToken(authClaims);
+
+                //returning the token...
+                return Ok(new
+                { 
+                    token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
+                    expiration = jwtToken.ValidTo
+                });
+            }
+
+            return Unauthorized();
+        }
+
+        //Method "JwtSecurityToken" that generates the token 
+        private JwtSecurityToken GetToken(List<Claim> authClaims)
+        {
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JWT:ValidIssuer"],
+                audience: _configuration["JWT:ValidAudience"],
+                expires: DateTime.Now.AddHours(3),
+                claims: authClaims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+                );
+            return token;
+        }
+        
         /*
         [HttpGet]
         public IActionResult TestEmail()
@@ -94,7 +151,7 @@ namespace EmployeeVacation.Controllers
                 new Response { Status = "Success", Message = "Email Sent Successfully" });
         }
         */
-        
+
         [HttpGet("ConfirmEmail")]
         public async Task<IActionResult> ConfirmEmail(string token, string email)
         {
