@@ -1,4 +1,4 @@
-﻿namespace EmployeeVacation.Models
+﻿namespace EmployeeVacation.Auth
 {
     public class Response
     {

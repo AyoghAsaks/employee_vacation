@@ -4,6 +4,7 @@ using EmployeeVacation.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EmployeeVacation.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230821204145_addIdentityRole")]
+    partial class addIdentityRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -75,12 +77,6 @@ namespace EmployeeVacation.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("RefreshTokenExpiryTime")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
@@ -221,14 +217,14 @@ namespace EmployeeVacation.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "46e757b2-537a-4454-ae19-e1d588568c66",
+                            Id = "710e4193-921a-470b-9b29-e545caf52c24",
                             ConcurrencyStamp = "1",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
-                            Id = "0f3b284c-3e9b-45c0-bb3f-df62f3d1037b",
+                            Id = "267dd724-3650-4f0a-840b-00967ed228aa",
                             ConcurrencyStamp = "2",
                             Name = "User",
                             NormalizedName = "USER"

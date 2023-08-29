@@ -11,13 +11,11 @@ namespace EmployeeVacation.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) 
         {
         }
-
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
             SeedRoles(builder);
         }
-        
         private static void SeedRoles(ModelBuilder builder)
         {
             builder.Entity<IdentityRole>().HasData
@@ -26,9 +24,7 @@ namespace EmployeeVacation.Data
                     new IdentityRole() { Name = "User", ConcurrencyStamp = "2", NormalizedName = "USER" }
                 );
         }
-        
         public DbSet<LeaveType> LeaveTypes { get; set; }
-
         public DbSet<LeaveAllocation> LeaveAllocations { get; set; }
 
     }

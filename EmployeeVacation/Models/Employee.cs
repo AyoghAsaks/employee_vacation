@@ -10,6 +10,8 @@ namespace EmployeeVacation.Models
         public string? TaxId { get; set;}
         public DateTime DateOfBirth { get; set; } 
         public DateTime DateJoined { get; set;} = DateTime.Now;
+        public string? RefreshToken { get; set; }
+        public DateTime RefreshTokenExpiryTime { get; set; }
 
     }
 }
