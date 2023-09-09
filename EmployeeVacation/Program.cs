@@ -1,5 +1,7 @@
 using EmployeeVacation.Data;
+using EmployeeVacation.IRepositories;
 using EmployeeVacation.Models;
+using EmployeeVacation.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -87,9 +89,11 @@ builder.Services.AddAuthentication(options =>
 //Add Email Configs ////
 var emailConfig = configuration
     .GetSection("EmailConfiguration")
-    .Get<EmailConfiguration>();                              ////
-builder.Services.AddSingleton(emailConfig);                 ////
-builder.Services.AddScoped<IEmailService, EmailService>(); ////
+    .Get<EmailConfiguration>();                                   ////
+builder.Services.AddSingleton(emailConfig);                      ////
+builder.Services.AddScoped<IEmailService, EmailService>();      ////
+builder.Services.AddScoped<IUserManagement, UserManagement>(); ////
+builder.Services.AddScoped<ITokens, Tokens>();                ////
 
 //builder.Services.AddTransient<ITokenService, TokenService>();
 

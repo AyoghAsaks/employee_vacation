@@ -40,5 +40,7 @@ namespace EmployeeVacation.Models.InputModels
         [Compare("Password")]
         [NotMapped]
         public string ConfirmPassword { get; set; } = null!;
+
+        public List<string>? Roles { get; set; }
     }
 }

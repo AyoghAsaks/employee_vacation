@@ -1,22 +1,18 @@
 ﻿using EmployeeVacation.Auth;
+using EmployeeVacation.HelperMethods;
+using EmployeeVacation.IRepositories;
 using EmployeeVacation.Models;
 using EmployeeVacation.Models.InputModels;
 using Microsoft.AspNetCore.Authorization;
-//using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using User.Management.Service.Models; ////
-using User.Management.Service.Services; ////
-
-//using NETCore.MailKit.Core;
-//using System.Security.Cryptography.X509Certificates;
-
+using User.Management.Service.Services; ////for IEmailService
 
 namespace EmployeeVacation.Controllers
 {
@@ -27,64 +23,50 @@ namespace EmployeeVacation.Controllers
         private readonly UserManager<Employee> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
-        private readonly IEmailService _emailService; 
-        public AuthenticationController(UserManager<Employee> userManager, RoleManager<IdentityRole> roleManager, IEmailService emailService, IConfiguration configuration)
+        private readonly IEmailService _emailService;
+
+        private readonly IUserManagement _userManagement;
+        private readonly ITokens _token;
+        public AuthenticationController(UserManager<Employee> userManager, RoleManager<IdentityRole> roleManager, 
+            IEmailService emailService, 
+            IConfiguration configuration,
+            IUserManagement userManagement,
+            ITokens token
+            )
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _emailService = emailService;
             _configuration = configuration;
+            _userManagement = userManagement;
+            _token = token;
         }
 
         [HttpPost]
         [Route("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterUser registerUser, string role)
+        public async Task<IActionResult> Register([FromBody] RegisterUser registerUser)
         {
-            //Check if this Employee Exist
-            var userExist = await _userManager.FindByEmailAsync(registerUser.Email);
-            if (userExist != null)
+            var tokenResponse = await _userManagement.CreateUserWithTokenAsync(registerUser); 
+            if (tokenResponse.IsSuccess)
             {
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    new Response { Status = "Error", Message = "Employee already exists!" });
-            }
-
-            //Add the Employee to the database
-            Employee employee = new()
-            {
-                Firstname = registerUser.Firstname,
-                Lastname = registerUser.Lastname,
-                DateOfBirth = registerUser.DateOfBirth,
-                DateJoined = registerUser.DateJoined,
-                Email = registerUser.Email,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                UserName = registerUser.UserName
-            };
-            if(await _roleManager.RoleExistsAsync(role))
-            {
-                var result = await _userManager.CreateAsync(employee, registerUser.Password);
-                if (!result.Succeeded)
-                {
-                    return StatusCode(StatusCodes.Status500InternalServerError,
-                        new Response { Status = "Error", Message = "The employee failed to be created" });
-                }
-
-                //Add role to the user/employee.... ////
-                await _userManager.AddToRoleAsync(employee, role);
-
-                //Add Token to Verify the email.... ////
-                var token = await _userManager.GenerateEmailConfirmationTokenAsync(employee);
-                var confirmationLink = Url.Action(nameof(ConfirmEmail), "Authentication", new { token, email = employee.Email }, Request.Scheme);
-                var message = new Message(new string[] {employee.Email! }, "Confirmation email link", confirmationLink!);
+                await _userManagement.AssignRoleToUserAsync(registerUser.Roles, tokenResponse.Response.GivenEmployee);
+                //Add Token to Verify the email....
+                var confirmationLink = Url.Action(nameof(ConfirmEmail), "Authentication", new { tokenResponse.Response.Token, email = registerUser.Email }, Request.Scheme);
+                var message = new Message(new string[] { registerUser.Email! }, "Confirmation email link", confirmationLink!);
                 _emailService.SendEmail(message);
 
                 return StatusCode(StatusCodes.Status200OK,
-                        new Response { Status = "Success", Message = $"The Employee has been created and the email link has been sent to the email: {employee.Email}" });
+                        new Response { Status = "Success", Message = $"The Employee has been created and the email link has been sent to the email: {registerUser.Email}", IsSuccess = true});
+
             }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                        new Response { Status = "Error", Message = "This Role Does not Exist." });
-            }
+            /*
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                        new Response { Status = "Failed", Message = "The Employee failed to be created" });
+            */
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                        new Response { Message = tokenResponse.Message, IsSuccess=false });
+
+            
 
         }
         /*
@@ -188,8 +170,11 @@ namespace EmployeeVacation.Controllers
                 }
 
                 //generate the token with the claims...
-                var token = CreateToken(authClaims); ////
-                var refreshToken = GenerateRefreshToken(); ////
+                ////var token = CreateToken(authClaims); ////
+                var token = _token.CreateToken(authClaims);
+
+                ////var refreshToken = GenerateRefreshToken(); ////
+                var refreshToken = GenRefreshToken.GenerateRefreshToken();
 
                 _ = int.TryParse(_configuration["JWT:RefreshTokenValidityInDays"], out int refreshTokenValidityInDays);
 
@@ -221,7 +206,8 @@ namespace EmployeeVacation.Controllers
             string? accessToken = tokenModel.AccessToken;
             string? refreshToken = tokenModel.RefreshToken;
 
-            var principal = GetPrincipalFromExpiredToken(accessToken);
+            ////var principal = GetPrincipalFromExpiredToken(accessToken); ////
+            var principal = _token.GetPrincipalFromExpiredToken(accessToken);
             if (principal == null)
             {
                 return BadRequest("Invalid access token or refresh token");
@@ -235,8 +221,11 @@ namespace EmployeeVacation.Controllers
             {
                 return BadRequest("Invalid access token or refresh token");
             }
-            var newAccessToken = CreateToken(principal.Claims.ToList());
-            var newRefreshToken = GenerateRefreshToken();
+            ////var newAccessToken = CreateToken(principal.Claims.ToList()); ////
+            var newAccessToken = _token.CreateToken(principal.Claims.ToList());
+
+            ////var newRefreshToken = GenerateRefreshToken(); ////
+            var newRefreshToken = GenRefreshToken.GenerateRefreshToken();
 
             employee.RefreshToken = newRefreshToken;
             await _userManager.UpdateAsync(employee);
@@ -248,7 +237,8 @@ namespace EmployeeVacation.Controllers
             });
         }
 
-        //Create Token
+        //Create Token <--------------------------------------------------------------
+        /*
         private JwtSecurityToken CreateToken(List<Claim> authClaims)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
@@ -264,8 +254,10 @@ namespace EmployeeVacation.Controllers
 
             return token;
         }
+        */
 
-        //GenerateRefreshToken
+        //GenerateRefreshToken  <-----------------------------------------
+        /*
         private static string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
@@ -273,8 +265,10 @@ namespace EmployeeVacation.Controllers
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
         }
+        */
 
-        //GetPrincipal GetPrincipalFromExpiredToken
+        //GetPrincipal GetPrincipalFromExpiredToken <----------------------
+        /*
         private ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
         {
             var tokenValidationParameters = new TokenValidationParameters
@@ -295,6 +289,7 @@ namespace EmployeeVacation.Controllers
 
             return principal;
         }
+        */
 
         //revoke/logout a logged in employee and prevent them from logging in again.
         [Authorize]
@@ -330,7 +325,6 @@ namespace EmployeeVacation.Controllers
 
             return NoContent();
         }
-
 
     }
 }

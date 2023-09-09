@@ -616,6 +616,9 @@
       },
       "User.Management.Service/1.0.0": {
         "dependencies": {
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "6.0.20",
+          "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "6.0.20",
+          "Microsoft.EntityFrameworkCore": "6.0.20",
           "NETCore.MailKit": "2.1.0"
         },
         "runtime": {
