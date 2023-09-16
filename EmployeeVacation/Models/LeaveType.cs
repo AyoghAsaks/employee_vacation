@@ -1,7 +1,12 @@
-﻿namespace EmployeeVacation.Models
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace EmployeeVacation.Models
 {
     public class LeaveType
     {
+        //[DatabaseGenerated(DatabaseGeneratedOption.None)]
+        //[Key]
         public int Id { get; set; }
         public string Name { get; set; }
 

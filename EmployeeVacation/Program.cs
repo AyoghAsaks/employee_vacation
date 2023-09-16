@@ -1,3 +1,4 @@
+using EmployeeVacation.Configurations;
 using EmployeeVacation.Data;
 using EmployeeVacation.IRepositories;
 using EmployeeVacation.Models;
@@ -10,6 +11,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using User.Management.Service.Models; ////
 using User.Management.Service.Services; ////
+//using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,8 +94,16 @@ var emailConfig = configuration
     .Get<EmailConfiguration>();                                   ////
 builder.Services.AddSingleton(emailConfig);                      ////
 builder.Services.AddScoped<IEmailService, EmailService>();      ////
-builder.Services.AddScoped<IUserManagement, UserManagement>(); ////
-builder.Services.AddScoped<ITokens, Tokens>();                ////
+
+//Add the Repositories and IRepositories to the Services.
+builder.Services.AddTransient<IUserManagement, UserManagement>(); ////
+builder.Services.AddTransient<ITokens, Tokens>();                ////
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+builder.Services.AddScoped<ILeaveTypeRepository, LeaveTypeRepository>();
+builder.Services.AddScoped<ILeaveAllocationRepository, LeaveAllocationRepository>();
+
+//Add AutoMapper to the Services.
+builder.Services.AddAutoMapper(typeof(MapperConfig));
 
 //builder.Services.AddTransient<ITokenService, TokenService>();
 

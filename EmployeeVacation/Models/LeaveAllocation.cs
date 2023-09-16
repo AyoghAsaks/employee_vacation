@@ -9,9 +9,7 @@ namespace EmployeeVacation.Models
 
         [ForeignKey("LeaveTypeId")]
         public LeaveType LeaveType { get; set; } //one leaveType can assigned to many LeaveAllocation(Employees)
-
         public int LeaveTypeId { get; set; }
-
         public string EmployeeId { get; set; }
 
         //public string UserId { get; set; }
