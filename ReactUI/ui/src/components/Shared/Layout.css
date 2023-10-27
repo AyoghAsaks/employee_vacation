@@ -1,0 +1,10 @@
+/* Lines 2 to Line 10 push the footer at the bottom of the page and keep it there */
+.Layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.foot {
+    margin-top: auto;    
+}

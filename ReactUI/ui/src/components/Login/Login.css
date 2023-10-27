@@ -1,0 +1,9 @@
+.form-floating {
+    position: relative;
+}
+
+.icon {
+    position: absolute;
+    top: calc(50%);
+    left: 1.25rem;
+}
