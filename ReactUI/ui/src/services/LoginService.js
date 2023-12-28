@@ -1,9 +1,9 @@
-import axios from "axios";
+/*import axios from "axios";
 
-const JWT_ISSUER = "JWTAuthenticationServer";
-const JWT_AUDIENCE = "JWTServicePostmanClient";
-const JWT_SUBJECT = "JWTServiceAccessToken";
-/*
+//const JWT_ISSUER = "JWTAuthenticationServer";
+//const JWT_AUDIENCE = "JWTServicePostmanClient";
+//const JWT_SUBJECT = "JWTServiceAccessToken";
+
 let payload = {
     "username": userName,
     "password": password,
@@ -11,7 +11,7 @@ let payload = {
     "jwTAudience": JWT_AUDIENCE,
     "jwTSubject": JWT_SUBJECT
 };
-*/
+
 export class LoginService {
     static serverURL = `https://localhost:7141​/api​/Authentication​`;  
 
@@ -37,3 +37,4 @@ export class LoginService {
     }
 
 }
+*/
